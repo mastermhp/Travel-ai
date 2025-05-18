@@ -1,0 +1,227 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import Link from "next/link"
+import { Menu, X, User, LogOut } from "lucide-react"
+import { useAuth } from '@/contexts/AuthContext'
+
+export default function Navbar() {
+  const [isOpen, setIsOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+  const { isAuthenticated, logout } = useAuth()
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 10) {
+        setScrolled(true)
+      } else {
+        setScrolled(false)
+      }
+    }
+
+    window.addEventListener("scroll", handleScroll)
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
+  
+  const handleLogout = () => {
+    logout();
+    window.location.href = '/';
+  };
+
+  return (
+    <header
+      className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? "bg-white shadow-md py-2" : "bg-transparent py-4"}`}
+    >
+      <div className="container mx-auto px-4">
+        <div className="flex justify-between items-center">
+          <Link href="/" className="flex items-center space-x-2">
+            <div className="relative w-10 h-10">
+              <div className="absolute inset-0 bg-black rounded-full opacity-20 animate-pulse"></div>
+              <div className="absolute inset-1 bg-white rounded-full flex items-center justify-center">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6 text-black"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+            </div>
+            <span className={`font-bold text-xl ${scrolled ? "text-black" : "text-white"}`}>TravelBuddy</span>
+          </Link>
+
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center space-x-8">
+            <Link
+              href="/"
+              className={`font-medium ${scrolled ? "text-gray-800 hover:text-black" : "text-white hover:text-gray-200"} transition-colors`}
+            >
+              Home
+            </Link>
+            <Link
+              href="/destinations"
+              className={`font-medium ${scrolled ? "text-gray-800 hover:text-black" : "text-white hover:text-gray-200"} transition-colors`}
+            >
+              Destinations
+            </Link>
+            <Link
+              href="/hotels"
+              className={`font-medium ${scrolled ? "text-gray-800 hover:text-black" : "text-white hover:text-gray-200"} transition-colors`}
+            >
+              Hotels
+            </Link>
+            <Link
+              href="/chat"
+              className={`font-medium ${scrolled ? "text-gray-800 hover:text-black" : "text-white hover:text-gray-200"} transition-colors`}
+            >
+              AI Chat
+            </Link>
+            
+            {isAuthenticated ? (
+              <div className="relative group">
+                <button 
+                  className={`flex items-center space-x-1 ${scrolled ? "text-gray-800 hover:text-black" : "text-white hover:text-gray-200"} transition-colors`}
+                >
+                  <User size={20} />
+                  <span>Account</span>
+                </button>
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                  <Link href="/profile" className="block px-4 py-2 text-gray-800 hover:bg-gray-100">
+                    My Profile
+                  </Link>
+                  <Link href="/bookings" className="block px-4 py-2 text-gray-800 hover:bg-gray-100">
+                    My Bookings
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left block px-4 py-2 text-gray-800 hover:bg-gray-100"
+                  >
+                    <div className="flex items-center">
+                      <LogOut size={16} className="mr-2" />
+                      <span>Sign Out</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className={`px-4 py-2 rounded-full ${scrolled ? "bg-white text-black border border-black hover:bg-gray-50" : "bg-white/20 text-white hover:bg-white/30"} transition-colors`}
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/register"
+                  className="px-4 py-2 rounded-full bg-black text-white hover:bg-gray-800 transition-colors"
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
+          </nav>
+
+          {/* Mobile menu button */}
+          <button className="md:hidden text-gray-500 focus:outline-none" onClick={() => setIsOpen(!isOpen)}>
+            {isOpen ? (
+              <X className={`h-6 w-6 ${scrolled ? "text-gray-800" : "text-white"}`} />
+            ) : (
+              <Menu className={`h-6 w-6 ${scrolled ? "text-gray-800" : "text-white"}`} />
+            )}
+          </button>
+        </div>
+
+        {/* Mobile Navigation */}
+        {isOpen && (
+          <div className="md:hidden mt-4 py-4 bg-white rounded-lg shadow-lg">
+            <nav className="flex flex-col space-y-4 px-4">
+              <Link
+                href="/"
+                className="font-medium text-gray-800 hover:text-black transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                Home
+              </Link>
+              <Link
+                href="/destinations"
+                className="font-medium text-gray-800 hover:text-black transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                Destinations
+              </Link>
+              <Link
+                href="/hotels"
+                className="font-medium text-gray-800 hover:text-black transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                Hotels
+              </Link>
+              <Link
+                href="/chat"
+                className="font-medium text-gray-800 hover:text-black transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                AI Chat
+              </Link>
+              
+              {isAuthenticated ? (
+                <div className="pt-2 border-t border-gray-100">
+                  <Link
+                    href="/profile"
+                    className="block py-2 text-gray-800 hover:text-black"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    My Profile
+                  </Link>
+                  <Link
+                    href="/bookings"
+                    className="block py-2 text-gray-800 hover:text-black"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    My Bookings
+                  </Link>
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setIsOpen(false);
+                    }}
+                    className="w-full text-left block py-2 text-gray-800 hover:text-black"
+                  >
+                    <div className="flex items-center">
+                      <LogOut size={16} className="mr-2" />
+                      <span>Sign Out</span>
+                    </div>
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col space-y-2 pt-2 border-t border-gray-100">
+                  <Link
+                    href="/login"
+                    className="px-4 py-2 rounded-full bg-white text-black border border-black hover:bg-gray-50 transition-colors text-center"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="px-4 py-2 rounded-full bg-black text-white hover:bg-gray-800 transition-colors text-center"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Sign Up
+                  </Link>
+                </div>
+              )}
+            </nav>
+          </div>
+        )}
+      </div>
+    </header>
+  )
+}
