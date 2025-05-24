@@ -2,14 +2,15 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Menu, X, User, LogOut } from "lucide-react"
-import { useAuth } from '@/contexts/AuthContext'
+import { Menu, X, User, LogOut, Settings } from "lucide-react"
+import { useAuth } from "@/context/AuthContext" // Import the auth context
 
 export default function Navbar() {
+  const { user, logout, isAuthenticated } = useAuth() // Use authentication context
   const [isOpen, setIsOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
-  const { isAuthenticated, logout } = useAuth()
-
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
+  
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 10) {
@@ -22,11 +23,16 @@ export default function Navbar() {
     window.addEventListener("scroll", handleScroll)
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
-  
-  const handleLogout = () => {
-    logout();
-    window.location.href = '/';
-  };
+
+  const handleLogout = async (e) => {
+    e.preventDefault()
+    try {
+      await logout()
+      setUserMenuOpen(false)
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
+  }
 
   return (
     <header
@@ -84,33 +90,62 @@ export default function Navbar() {
               AI Chat
             </Link>
             
-            {isAuthenticated ? (
-              <div className="relative group">
+            {isAuthenticated() ? (
+              // User is authenticated - show user menu
+              <div className="relative">
                 <button 
-                  className={`flex items-center space-x-1 ${scrolled ? "text-gray-800 hover:text-black" : "text-white hover:text-gray-200"} transition-colors`}
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className={`flex items-center space-x-2 ${scrolled ? "text-gray-800 hover:text-black" : "text-white hover:text-gray-200"} transition-colors`}
                 >
-                  <User size={20} />
-                  <span>Account</span>
+                  <div className={`w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center ${scrolled ? "text-gray-700" : "text-gray-600"}`}>
+                    <User className="h-5 w-5" />
+                  </div>
+                  <span className="font-medium">
+                    {user?.firstName || 'Account'}
+                  </span>
                 </button>
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                  <Link href="/profile" className="block px-4 py-2 text-gray-800 hover:bg-gray-100">
-                    My Profile
-                  </Link>
-                  <Link href="/bookings" className="block px-4 py-2 text-gray-800 hover:bg-gray-100">
-                    My Bookings
-                  </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full text-left block px-4 py-2 text-gray-800 hover:bg-gray-100"
-                  >
-                    <div className="flex items-center">
-                      <LogOut size={16} className="mr-2" />
-                      <span>Sign Out</span>
+                
+                {userMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                    <div className="px-4 py-2 border-b border-gray-100">
+                      <p className="text-sm font-medium text-gray-900">
+                        {user?.firstName} {user?.lastName}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">
+                        {user?.email}
+                      </p>
                     </div>
-                  </button>
-                </div>
+                    <Link 
+                      href="/bookings" 
+                      onClick={() => setUserMenuOpen(false)}
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                    >
+                      My Bookings
+                    </Link>
+                    <Link 
+                      href="/profile" 
+                      onClick={() => setUserMenuOpen(false)}
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                    >
+                      <div className="flex items-center">
+                        <Settings className="h-4 w-4 mr-2" />
+                        Profile Settings
+                      </div>
+                    </Link>
+                    <button 
+                      onClick={handleLogout}
+                      className="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100 w-full text-left"
+                    >
+                      <div className="flex items-center">
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Sign Out
+                      </div>
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
+              // User is not authenticated - show login/signup buttons
               <>
                 <Link
                   href="/login"
@@ -171,36 +206,53 @@ export default function Navbar() {
                 AI Chat
               </Link>
               
-              {isAuthenticated ? (
-                <div className="pt-2 border-t border-gray-100">
-                  <Link
-                    href="/profile"
-                    className="block py-2 text-gray-800 hover:text-black"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    My Profile
-                  </Link>
+              {isAuthenticated() ? (
+                // User is authenticated - show profile links and logout
+                <div className="pt-4 border-t border-gray-100">
+                  <div className="flex items-center mb-4">
+                    <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 mr-3">
+                      <User className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {user?.firstName} {user?.lastName}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate max-w-[200px]">
+                        {user?.email}
+                      </p>
+                    </div>
+                  </div>
+                  
                   <Link
                     href="/bookings"
-                    className="block py-2 text-gray-800 hover:text-black"
+                    className="flex items-center w-full py-2 px-3 rounded-md font-medium text-gray-700 hover:bg-gray-100"
                     onClick={() => setIsOpen(false)}
                   >
                     My Bookings
                   </Link>
-                  <button
-                    onClick={() => {
-                      handleLogout();
-                      setIsOpen(false);
-                    }}
-                    className="w-full text-left block py-2 text-gray-800 hover:text-black"
+                  
+                  <Link
+                    href="/profile"
+                    className="flex items-center w-full py-2 px-3 rounded-md font-medium text-gray-700 hover:bg-gray-100"
+                    onClick={() => setIsOpen(false)}
                   >
-                    <div className="flex items-center">
-                      <LogOut size={16} className="mr-2" />
-                      <span>Sign Out</span>
-                    </div>
+                    <Settings className="h-4 w-4 mr-2" />
+                    Profile Settings
+                  </Link>
+                  
+                  <button
+                    onClick={(e) => {
+                      handleLogout(e)
+                      setIsOpen(false)
+                    }}
+                    className="flex items-center w-full py-2 px-3 rounded-md font-medium text-red-600 hover:bg-gray-100 mt-2"
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign Out
                   </button>
                 </div>
               ) : (
+                // User is not authenticated - show login/signup buttons
                 <div className="flex flex-col space-y-2 pt-2 border-t border-gray-100">
                   <Link
                     href="/login"

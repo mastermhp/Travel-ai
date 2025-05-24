@@ -1,28 +1,37 @@
+// app/login/page.jsx
 "use client"
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Mail, Lock, Eye, EyeOff } from "lucide-react"
-import apiService from "@/services/api"
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from "@/context/AuthContext"
 
 export default function Login() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { login, isAuthenticated } = useAuth()
+  
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
-
-  // Check if user is already logged in
+  const [registrationSuccess, setRegistrationSuccess] = useState(false)
+  
   useEffect(() => {
-    if (isAuthenticated) {
-      router.push("/");
+    // Check if user came from registration page
+    const registered = searchParams.get('registered')
+    if (registered === 'true') {
+      setRegistrationSuccess(true)
     }
-  }, [isAuthenticated, router]);
+    
+    // Redirect if already logged in
+    if (isAuthenticated()) {
+      router.push('/')
+    }
+  }, [isAuthenticated, router, searchParams])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -30,27 +39,17 @@ export default function Login() {
     setIsLoading(true)
 
     try {
-      // Call the backend API using the service
-      const response = await apiService.login(email, password);
-      
-      console.log("Login successful:", response);
-      
-      // Update the auth context
-      login(response.token);
-      
-      // Redirect to home page after successful login
-      router.push("/");
+      await login(email, password)
+      router.push("/")
     } catch (err) {
-      console.error("Login error:", err);
-      setError(err.message || "Invalid email or password. Please try again.");
+      setError(err.message || "Invalid email or password. Please try again.")
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    // The rest of your login component stays the same
-    <div className="min-h-screen flex pt-16">
+    <div className="min-h-screen flex">
       {/* Left side - Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
         <div className="max-w-md w-full">
@@ -58,6 +57,19 @@ export default function Login() {
             <h1 className="text-3xl font-bold mb-2">Welcome Back</h1>
             <p className="text-gray-600">Sign in to continue your journey</p>
           </div>
+
+          {registrationSuccess && (
+            <div className="bg-green-50 text-green-600 p-4 rounded-lg mb-6 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              Registration successful! Please sign in with your new account.
+            </div>
+          )}
 
           {error && (
             <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-6 flex items-center">
@@ -231,7 +243,7 @@ export default function Login() {
       {/* Right side - Image */}
       <div className="hidden lg:block lg:w-1/2 relative">
         <div className="absolute inset-0 bg-gradient-to-r from-black/80 to-gray-800/90"></div>
-        <Image src="/placeholder.svg?height=1080&width=1080" alt="Travel destination" fill className="object-cover" />
+        <Image src="/placeholder.svg" alt="Travel destination" fill className="object-cover" />
         <div className="absolute inset-0 flex items-center justify-center p-12">
           <div className="max-w-md text-white">
             <h2 className="text-3xl font-bold mb-6">Start Your Journey Today</h2>

@@ -1,3 +1,4 @@
+// app/register/page.jsx
 "use client"
 
 import { useState, useEffect } from "react"
@@ -5,27 +6,31 @@ import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { User, Mail, Lock, Eye, EyeOff, Check } from "lucide-react"
-import apiService from "@/services/api"
+import { useAuth } from "@/context/AuthContext"
 
 export default function Register() {
   const router = useRouter()
+  const { register: registerUser, isAuthenticated } = useAuth()
+  
   const [formData, setFormData] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
     password: "",
     confirmPassword: "",
+    phone: ""
   })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState({})
-
-  // Check if user is already logged in
+  
   useEffect(() => {
-    if (apiService.isAuthenticated()) {
-      router.push("/");
+    // Redirect if already logged in
+    if (isAuthenticated()) {
+      router.push('/')
     }
-  }, [router]);
+  }, [isAuthenticated, router])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -46,8 +51,12 @@ export default function Register() {
   const validateForm = () => {
     const newErrors = {}
 
-    if (!formData.name.trim()) {
-      newErrors.name = "Name is required"
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = "First name is required"
+    }
+
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = "Last name is required"
     }
 
     if (!formData.email.trim()) {
@@ -80,30 +89,32 @@ export default function Register() {
     setIsLoading(true)
 
     try {
-      // Call the backend API for registration
-      const { name, email, password } = formData;
-      const response = await apiService.register({ name, email, password });
-      
-      console.log("Registration successful:", response);
+      await registerUser({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone
+      })
       
       // Redirect to login page after successful registration
-      router.push("/login");
+      router.push("/login?registered=true")
     } catch (err) {
-      console.error("Registration error:", err);
       setErrors({
         form: err.message || "Registration failed. Please try again.",
-      });
+      })
+      console.error('Registration error:', err)
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex pt-16">
+    <div className="min-h-screen flex">
       {/* Left side - Image */}
       <div className="hidden lg:block lg:w-1/2 relative">
         <div className="absolute inset-0 bg-gradient-to-r from-black/90 to-gray-800/80"></div>
-        <Image src="/placeholder.svg?height=1080&width=1080" alt="Travel destination" fill className="object-cover" />
+        <Image src="/placeholder.svg" alt="Travel destination" fill className="object-cover" />
         <div className="absolute inset-0 flex items-center justify-center p-12">
           <div className="max-w-md text-white">
             <h2 className="text-3xl font-bold mb-6">Join Our Travel Community</h2>
@@ -157,25 +168,48 @@ export default function Register() {
           {errors.form && <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-6">{errors.form}</div>}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                Full Name
-              </label>
-              <div className="relative">
-                <User className="absolute left-3 top-3 text-gray-400" size={20} />
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  value={formData.name}
-                  onChange={handleChange}
-                  className={`w-full pl-10 pr-4 py-3 border ${
-                    errors.name ? "border-red-500" : "border-gray-300"
-                  } rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500`}
-                  placeholder="John Doe"
-                />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                  First Name
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3 top-3 text-gray-400" size={20} />
+                  <input
+                    id="firstName"
+                    name="firstName"
+                    type="text"
+                    value={formData.firstName}
+                    onChange={handleChange}
+                    className={`w-full pl-10 pr-4 py-3 border ${
+                      errors.firstName ? "border-red-500" : "border-gray-300"
+                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500`}
+                    placeholder="John"
+                  />
+                </div>
+                {errors.firstName && <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>}
               </div>
-              {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+
+              <div>
+                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                  Last Name
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3 top-3 text-gray-400" size={20} />
+                  <input
+                    id="lastName"
+                    name="lastName"
+                    type="text"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    className={`w-full pl-10 pr-4 py-3 border ${
+                      errors.lastName ? "border-red-500" : "border-gray-300"
+                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500`}
+                    placeholder="Doe"
+                  />
+                </div>
+                {errors.lastName && <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>}
+              </div>
             </div>
 
             <div>
@@ -197,6 +231,23 @@ export default function Register() {
                 />
               </div>
               {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                Phone Number (optional)
+              </label>
+              <div className="relative">
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  className="w-full pl-4 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
+                  placeholder="+1 (123) 456-7890"
+                />
+              </div>
             </div>
 
             <div>
