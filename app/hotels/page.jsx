@@ -15,7 +15,9 @@ import {
   ParkingMeterIcon as Parking,
   Snowflake,
   AlertTriangle,
-  Info
+  Eye,
+  ImageIcon,
+  Camera,
 } from "lucide-react"
 import apiService from "@/services/api"
 import SafeImage from "@/components/SafeImage"
@@ -36,139 +38,134 @@ export default function HotelsPage() {
   const [hotels, setHotels] = useState([])
   const [dataSource, setDataSource] = useState("")
   const [error, setError] = useState(null)
-  const [searchTrigger, setSearchTrigger] = useState(0) // New state to trigger search
+  const [searchTrigger, setSearchTrigger] = useState(0)
 
   // Fetch hotels from API
   useEffect(() => {
     const fetchHotels = async () => {
-      setIsLoading(true);
-      setError(null);
-      
+      setIsLoading(true)
+      setError(null)
+
       try {
-        let destination = location || "New York";
-        console.log("Fetching hotels for:", destination);
-        
+        const destination = location || "New York"
+        console.log("Fetching hotels for:", destination)
+
         // Get best deals or search for specific location
-        let hotelsData;
-        
+        let hotelsData
+
         try {
           // Try the search endpoint specifically to honor the location filter
           const searchResponse = await apiService.searchHotels({
             destination,
-            adults: parseInt(guests) || 2,
+            adults: Number.parseInt(guests) || 2,
             minPrice: priceRange[0],
             maxPrice: priceRange[1],
-            rating: rating > 0 ? rating : undefined
-          });
-          
-          hotelsData = searchResponse;
-          
+            rating: rating > 0 ? rating : undefined,
+          })
+
+          hotelsData = searchResponse
+
           // If no hotels found with search, try best deals
           if (!hotelsData.hotels || hotelsData.hotels.length === 0) {
-            console.log("No hotels found in search, trying best deals");
+            console.log("No hotels found in search, trying best deals")
             const bestDealsResponse = await apiService.getBestHotelDeals({
               destination,
               limit: 12,
-              currency: 'USD'
-            });
-            
-            hotelsData = bestDealsResponse;
+              currency: "USD",
+            })
+
+            hotelsData = bestDealsResponse
           }
         } catch (searchError) {
-          console.error("Error searching for hotels:", searchError);
-          
+          console.error("Error searching for hotels:", searchError)
+
           // Fall back to best deals
           const bestDealsResponse = await apiService.getBestHotelDeals({
             destination,
             limit: 12,
-            currency: 'USD'
-          });
-          
-          hotelsData = bestDealsResponse;
+            currency: "USD",
+          })
+
+          hotelsData = bestDealsResponse
         }
-        
+
         if (hotelsData && hotelsData.hotels) {
           // Set the data source info
-          setDataSource(hotelsData.dataSource || "API");
-          
+          setDataSource(hotelsData.dataSource || "API")
+
           // Process hotels data
-          let hotelsList = hotelsData.hotels;
-          
+          let hotelsList = hotelsData.hotels
+
           // Additional location filtering on client side (to be extra sure)
           if (destination && destination.trim() !== "") {
-            const searchTerms = destination.toLowerCase().trim().split(/\s+/);
-            
+            const searchTerms = destination.toLowerCase().trim().split(/\s+/)
+
             // Filter hotels by location if search term is provided
             // Make this a loose match to ensure we get results
-            hotelsList = hotelsList.filter(hotel => {
-              const hotelLocation = 
-                (hotel.location || hotel.address || "").toLowerCase();
-              
+            hotelsList = hotelsList.filter((hotel) => {
+              const hotelLocation = (hotel.location || hotel.address || "").toLowerCase()
+
               // Check if ANY of the search terms match the hotel location
-              return searchTerms.some(term => hotelLocation.includes(term));
-            });
-            
+              return searchTerms.some((term) => hotelLocation.includes(term))
+            })
+
             // If no hotels found after filtering, use all hotels but sort by relevance
             if (hotelsList.length === 0) {
-              console.log("No exact location matches, using all results sorted by relevance");
-              hotelsList = hotelsData.hotels;
-              
+              console.log("No exact location matches, using all results sorted by relevance")
+              hotelsList = hotelsData.hotels
+
               // Sort by location relevance
               hotelsList.sort((a, b) => {
-                const locA = (a.location || a.address || "").toLowerCase();
-                const locB = (b.location || b.address || "").toLowerCase();
-                
+                const locA = (a.location || a.address || "").toLowerCase()
+                const locB = (b.location || b.address || "").toLowerCase()
+
                 // Count matching terms in location
-                const matchScoreA = searchTerms.reduce((score, term) => 
-                  score + (locA.includes(term) ? 1 : 0), 0);
-                const matchScoreB = searchTerms.reduce((score, term) => 
-                  score + (locB.includes(term) ? 1 : 0), 0);
-                
-                return matchScoreB - matchScoreA;
-              });
+                const matchScoreA = searchTerms.reduce((score, term) => score + (locA.includes(term) ? 1 : 0), 0)
+                const matchScoreB = searchTerms.reduce((score, term) => score + (locB.includes(term) ? 1 : 0), 0)
+
+                return matchScoreB - matchScoreA
+              })
             }
           }
-          
+
           // Filter by amenities if needed
           if (amenities.length > 0) {
-            hotelsList = hotelsList.filter(hotel => {
+            hotelsList = hotelsList.filter((hotel) => {
               // Check if hotel has the amenities array
               if (!hotel.amenities || !Array.isArray(hotel.amenities)) {
-                return false;
+                return false
               }
-              
+
               // Convert hotel amenities to lowercase strings for comparison
-              const hotelAmenitiesLower = hotel.amenities.map(a => 
-                typeof a === 'string' ? a.toLowerCase() : ''
-              );
-              
+              const hotelAmenitiesLower = hotel.amenities.map((a) => (typeof a === "string" ? a.toLowerCase() : ""))
+
               // Check if all selected amenities are included
-              return amenities.every(amenity => {
-                const amenityLower = amenity.toLowerCase();
-                return hotelAmenitiesLower.some(a => a.includes(amenityLower));
-              });
-            });
+              return amenities.every((amenity) => {
+                const amenityLower = amenity.toLowerCase()
+                return hotelAmenitiesLower.some((a) => a.includes(amenityLower))
+              })
+            })
           }
-          
-          setHotels(hotelsList);
+
+          setHotels(hotelsList)
         } else {
-          setError("No hotels found. Please try a different search.");
+          setError("No hotels found. Please try a different search.")
         }
       } catch (error) {
-        console.error("Error fetching hotels:", error);
-        setError(error.message || "Failed to load hotels. Please try again.");
+        console.error("Error fetching hotels:", error)
+        setError(error.message || "Failed to load hotels. Please try again.")
       } finally {
-        setIsLoading(false);
+        setIsLoading(false)
       }
-    };
+    }
 
-    fetchHotels();
-  }, [searchTrigger]); // Only depend on searchTrigger, not on filters directly
+    fetchHotels()
+  }, [searchTrigger])
 
   const handleSearch = (e) => {
     e.preventDefault()
     // Increment search trigger to force a new search with current filters
-    setSearchTrigger(prevTrigger => prevTrigger + 1);
+    setSearchTrigger((prevTrigger) => prevTrigger + 1)
   }
 
   const handleAmenityToggle = (amenity) => {
@@ -176,60 +173,51 @@ export default function HotelsPage() {
   }
 
   const getAmenityIcon = (amenity) => {
-    const amenityLower = typeof amenity === 'string' ? amenity.toLowerCase() : '';
-    
-    if (amenityLower.includes('wifi')) return <Wifi className="h-4 w-4" />
-    if (amenityLower.includes('breakfast')) return <Coffee className="h-4 w-4" />
-    if (amenityLower.includes('tv')) return <Tv className="h-4 w-4" />
-    if (amenityLower.includes('restaurant')) return <Utensils className="h-4 w-4" />
-    if (amenityLower.includes('parking')) return <Parking className="h-4 w-4" />
-    if (amenityLower.includes('air') || amenityLower.includes('ac')) return <Snowflake className="h-4 w-4" />
-    
+    const amenityLower = typeof amenity === "string" ? amenity.toLowerCase() : ""
+
+    if (amenityLower.includes("wifi")) return <Wifi className="h-4 w-4" />
+    if (amenityLower.includes("breakfast")) return <Coffee className="h-4 w-4" />
+    if (amenityLower.includes("tv")) return <Tv className="h-4 w-4" />
+    if (amenityLower.includes("restaurant")) return <Utensils className="h-4 w-4" />
+    if (amenityLower.includes("parking")) return <Parking className="h-4 w-4" />
+    if (amenityLower.includes("air") || amenityLower.includes("ac")) return <Snowflake className="h-4 w-4" />
+
     return null
   }
-  
-  // Helper function to get hotel image URLs or generate one based on location
+
+  // Helper function to get hotel image URLs - now uses enhanced images
   const getHotelImageUrl = (hotel) => {
-    if (!hotel) return '/placeholder.svg';
-    
-    // Try to extract image from hotel data
+    if (!hotel) return "/placeholder.svg"
+
+    // Use the enhanced image from the new service
+    if (hotel.image && typeof hotel.image === "string") {
+      return hotel.image
+    }
+
+    // Fallback to first image in images array
     if (hotel.images && Array.isArray(hotel.images) && hotel.images.length > 0) {
-      const firstImage = hotel.images[0];
-      if (typeof firstImage === 'object' && firstImage.url) {
-        return firstImage.url;
-      }
-      if (typeof firstImage === 'string') {
-        return firstImage;
-      }
+      return hotel.images[0]
     }
-    
-    if (hotel.image) {
-      return hotel.image;
-    }
-    
-    // Generate a hotel-specific image URL based on location or name
-    const searchTerm = hotel.location || hotel.name || 'luxury hotel';
-    const locationTerm = encodeURIComponent(searchTerm.split(',')[0].replace(/\s+/g, '+').toLowerCase());
-    
-    // Use Unsplash for reliable images
-    return `https://source.unsplash.com/random/800x600/?hotel+${locationTerm}`;
+
+    // Final fallback
+    return "/placeholder.svg"
   }
 
-  // Get a stable image URL that will persist during renders
-  const getStableImageUrl = (hotel) => {
-    if (!hotel || !hotel.id) return '/placeholder.svg';
-    
-    // Use hotel.id to generate a stable but random-looking image
-    const hash = hotel.id.toString().split('').reduce((acc, char) => {
-      return acc + char.charCodeAt(0);
-    }, 0) % 100;
-    
-    // Use location or name for relevance
-    const searchTerm = hotel.location || hotel.name || 'luxury hotel';
-    const locationTerm = encodeURIComponent(searchTerm.split(',')[0].replace(/\s+/g, '+').toLowerCase());
-    
-    // Add hash to make URL stable but unique per hotel
-    return `https://source.unsplash.com/collection/3649833/800x600?hotel+${locationTerm}&sig=${hash}`;
+  // Get image source badge text with better descriptions
+  const getImageSourceBadge = (hotel) => {
+    if (hotel.imageSource === "Enhanced Search") return "Smart Images"
+    if (hotel.imageSource === "API + Enhanced") return "Real + Smart"
+    if (hotel.imageSource === "API Only") return "Official"
+    if (hotel.imageSource === "Enhanced Fallback") return "Curated"
+    return "Enhanced"
+  }
+
+  // Get badge color based on image source
+  const getBadgeColor = (hotel) => {
+    if (hotel.imageSource === "API + Enhanced") return "bg-green-500"
+    if (hotel.imageSource === "Enhanced Search") return "bg-blue-500"
+    if (hotel.imageSource === "API Only") return "bg-purple-500"
+    return "bg-orange-500"
   }
 
   return (
@@ -332,7 +320,7 @@ export default function HotelsPage() {
                   className="w-full bg-black hover:bg-gray-800 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center"
                 >
                   <Search className="h-4 w-4 mr-2" />
-                  Search
+                  Search Hotels
                 </button>
               </form>
             </div>
@@ -341,8 +329,10 @@ export default function HotelsPage() {
           {/* Hotel Listings */}
           <div className="lg:col-span-3">
             {isLoading ? (
-              <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black"></div>
+              <div className="flex flex-col justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black mb-4"></div>
+                <p className="text-gray-600">Searching hotels and enhancing images...</p>
+                <p className="text-sm text-gray-500 mt-2">Finding the best photos for each property</p>
               </div>
             ) : error ? (
               <div className="bg-white rounded-xl shadow-md p-8 text-center">
@@ -357,7 +347,7 @@ export default function HotelsPage() {
                     setPriceRange([0, 1000])
                     setRating(0)
                     setAmenities([])
-                    setSearchTrigger(prev => prev + 1)
+                    setSearchTrigger((prev) => prev + 1)
                   }}
                   className="text-black font-medium hover:underline"
                 >
@@ -379,7 +369,7 @@ export default function HotelsPage() {
                     setPriceRange([0, 1000])
                     setRating(0)
                     setAmenities([])
-                    setSearchTrigger(prev => prev + 1)
+                    setSearchTrigger((prev) => prev + 1)
                   }}
                   className="text-black font-medium hover:underline"
                 >
@@ -388,89 +378,121 @@ export default function HotelsPage() {
               </div>
             ) : (
               <>
-                {/* Data source info */}
-                {dataSource && dataSource.includes("AI") && (
-                  <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center">
-                    <Info className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0" />
-                    <p className="text-sm text-blue-800">
-                      Some hotel data is AI-enhanced to provide you with the best recommendations.
+                {/* Enhanced image info */}
+                <div className="mb-4 bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-lg p-4 flex items-center">
+                  <Camera className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm text-blue-800 font-medium">
+                      <strong>Enhanced Hotel Images:</strong> Smart image selection using hotel names and locations
+                    </p>
+                    <p className="text-xs text-blue-600 mt-1">
+                      Each hotel shows curated images specific to the property and brand
                     </p>
                   </div>
-                )}
-                
+                </div>
+
                 {/* Show location if searching */}
                 {location && (
                   <div className="mb-4">
                     <h2 className="text-xl font-semibold">
-                      Hotels in {location}
+                      Hotels in {location} ({hotels.length} found)
                     </h2>
                   </div>
                 )}
-              
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {hotels.map((hotel) => (
-                    <Link href={`/hotels/${hotel.provider || 'booking'}/${hotel.id}`} key={`${hotel.provider || 'booking'}-${hotel.id}`}>
-                      <div className="bg-white rounded-xl shadow-md overflow-hidden h-full transition-transform duration-300 hover:scale-[1.02]">
-                        <div className="relative h-48">
-                          <SafeImage 
-                            src={getHotelImageUrl(hotel)} 
-                            alt={hotel.name} 
-                            fill 
-                            className="object-cover" 
-                            fallbackSrc={getStableImageUrl(hotel)}
-                          />
+                    <div
+                      key={`${hotel.provider || "booking"}-${hotel.id}`}
+                      className="bg-white rounded-xl shadow-md overflow-hidden h-full transition-transform duration-300 hover:scale-[1.02]"
+                    >
+                      <div className="relative h-48">
+                        <SafeImage
+                          src={getHotelImageUrl(hotel)}
+                          alt={`${hotel.name} - Enhanced Hotel Image`}
+                          fill
+                          className="object-cover"
+                          fallbackSrc={`https://source.unsplash.com/800x600/?${encodeURIComponent(hotel.name)}+hotel+luxury`}
+                        />
+                        {/* Rating badge */}
+                        <div className="absolute top-4 right-4 bg-black text-white px-2 py-1 rounded-full text-sm flex items-center">
+                          <Star className="h-3 w-3 mr-1 fill-current" />
+                          {typeof hotel.rating === "number" ? hotel.rating.toFixed(1) : "4.0"}
                         </div>
-                        <div className="p-6">
-                          <div className="flex justify-between items-start mb-2">
-                            <h3 className="text-xl font-bold">{hotel.name}</h3>
-                            <div className="flex items-center bg-black text-white px-2 py-1 rounded-full text-sm">
-                              <Star className="h-3 w-3 mr-1 fill-current" />
-                              {typeof hotel.rating === 'number' ? hotel.rating.toFixed(1) : '4.0'}
+                        {/* Enhanced image source badge */}
+                        <div
+                          className={`absolute top-4 left-4 ${getBadgeColor(hotel)} text-white px-2 py-1 rounded-full text-xs font-medium flex items-center`}
+                        >
+                          <Camera className="h-3 w-3 mr-1" />
+                          {getImageSourceBadge(hotel)}
+                        </div>
+                        {/* Image count indicator */}
+                        {hotel.images && hotel.images.length > 1 && (
+                          <div className="absolute bottom-4 right-4 bg-black/70 text-white px-2 py-1 rounded-full text-xs flex items-center">
+                            <ImageIcon className="h-3 w-3 mr-1" />
+                            {hotel.images.length} photos
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-6">
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="text-xl font-bold line-clamp-2">{hotel.name}</h3>
+                        </div>
+
+                        <div className="flex items-center text-gray-600 mb-3">
+                          <MapPin className="h-4 w-4 mr-1 flex-shrink-0" />
+                          <span className="text-sm line-clamp-1">
+                            {hotel.address || hotel.location || "Location information unavailable"}
+                          </span>
+                        </div>
+
+                        <p className="text-gray-600 mb-4 line-clamp-2">
+                          {hotel.description || "Experience a comfortable stay at this property"}
+                        </p>
+
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {(Array.isArray(hotel.amenities) ? hotel.amenities : []).slice(0, 4).map((amenity, idx) => (
+                            <div
+                              key={`${amenity}-${idx}`}
+                              className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs flex items-center"
+                            >
+                              {getAmenityIcon(amenity)}
+                              <span className="ml-1 capitalize">{typeof amenity === "string" ? amenity : ""}</span>
                             </div>
-                          </div>
+                          ))}
+                          {Array.isArray(hotel.amenities) && hotel.amenities.length > 4 && (
+                            <div className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs">
+                              +{hotel.amenities.length - 4} more
+                            </div>
+                          )}
+                        </div>
 
-                          <div className="flex items-center text-gray-600 mb-3">
-                            <MapPin className="h-4 w-4 mr-1" />
-                            <span className="text-sm">{hotel.address || hotel.location || "Location information unavailable"}</span>
-                          </div>
-
-                          <p className="text-gray-600 mb-4 line-clamp-2">{hotel.description || "Experience a comfortable stay at this property"}</p>
-
-                          <div className="flex flex-wrap gap-2 mb-4">
-                            {(Array.isArray(hotel.amenities) ? hotel.amenities : []).slice(0, 4).map((amenity, idx) => (
-                              <div
-                                key={`${amenity}-${idx}`}
-                                className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs flex items-center"
-                              >
-                                {getAmenityIcon(amenity)}
-                                <span className="ml-1 capitalize">{typeof amenity === 'string' ? amenity : ''}</span>
-                              </div>
-                            ))}
-                            {Array.isArray(hotel.amenities) && hotel.amenities.length > 4 && (
-                              <div className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs">
-                                +{hotel.amenities.length - 4} more
-                              </div>
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <span className="text-xl font-bold text-black">
+                              $
+                              {typeof hotel.price === "number"
+                                ? hotel.price.toFixed(0)
+                                : typeof hotel.price === "string" && !isNaN(Number.parseFloat(hotel.price))
+                                  ? Number.parseFloat(hotel.price).toFixed(0)
+                                  : "0"}
+                            </span>
+                            <span className="text-gray-500 text-sm"> / night</span>
+                            {hotel.reviewCount && (
+                              <div className="text-xs text-gray-500 mt-1">{hotel.reviewCount} reviews</div>
                             )}
                           </div>
-
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <span className="text-xl font-bold text-black">${
-                                typeof hotel.price === 'number' 
-                                  ? hotel.price.toFixed(0) 
-                                  : typeof hotel.price === 'string' && !isNaN(parseFloat(hotel.price))
-                                    ? parseFloat(hotel.price).toFixed(0)
-                                    : '0'
-                              }</span>
-                              <span className="text-gray-500 text-sm"> / night</span>
-                            </div>
-                            <button className="bg-black hover:bg-gray-800 text-white px-4 py-2 rounded-lg text-sm transition-colors">
-                              View Details
-                            </button>
-                          </div>
+                          <Link
+                            href={`/hotels/${hotel.id}`}
+                            // href={`/hotels/${hotel.provider || "booking"}/${hotel.id}`}
+                            className="bg-black hover:bg-gray-800 text-white px-4 py-2 rounded-lg text-sm transition-colors flex items-center"
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            View Details
+                          </Link>
                         </div>
                       </div>
-                    </Link>
+                    </div>
                   ))}
                 </div>
               </>

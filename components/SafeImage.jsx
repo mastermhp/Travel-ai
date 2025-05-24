@@ -1,47 +1,46 @@
-// components/SafeImage.jsx
-import { useState, useEffect } from 'react';
-import Image from 'next/image';
+"use client"
+
+import { useState, useEffect } from "react"
+import Image from "next/image"
 
 export default function SafeImage({ src, alt, fallbackSrc, ...props }) {
-  const [imgSrc, setImgSrc] = useState("/placeholder.svg");
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
-  
+  const [imgSrc, setImgSrc] = useState("/placeholder.svg")
+  const [isLoading, setIsLoading] = useState(true)
+  const [hasError, setHasError] = useState(false)
+
   useEffect(() => {
     // Reset states when src changes
     if (src) {
-      setImgSrc(src);
-      setIsLoading(true);
-      setHasError(false);
+      setImgSrc(src)
+      setIsLoading(true)
+      setHasError(false)
     } else if (fallbackSrc) {
-      setImgSrc(fallbackSrc);
-      setIsLoading(true);
-      setHasError(false);
+      setImgSrc(fallbackSrc)
+      setIsLoading(true)
+      setHasError(false)
     }
-  }, [src, fallbackSrc]);
-  
+  }, [src, fallbackSrc])
+
   // Check if the URL is external
-  const isExternal = imgSrc && typeof imgSrc === 'string' && (
-    imgSrc.startsWith('http:') || imgSrc.startsWith('https:')
-  );
-  
+  const isExternal = imgSrc && typeof imgSrc === "string" && (imgSrc.startsWith("http:") || imgSrc.startsWith("https:"))
+
   const handleError = () => {
-    setHasError(true);
-    
+    setHasError(true)
+
     if (fallbackSrc && imgSrc !== fallbackSrc) {
-      console.log("Image load error, using fallback:", fallbackSrc);
-      setImgSrc(fallbackSrc);
-      setIsLoading(true); // Reset loading state for the fallback image
+      console.log("Image load error, using fallback:", fallbackSrc)
+      setImgSrc(fallbackSrc)
+      setIsLoading(true) // Reset loading state for the fallback image
     } else {
-      console.log("Using placeholder as final fallback");
-      setImgSrc("/placeholder.svg");
+      console.log("Using placeholder as final fallback")
+      setImgSrc("/placeholder.svg?height=400&width=600")
     }
-  };
-  
+  }
+
   const handleLoad = () => {
-    setIsLoading(false);
-  };
-  
+    setIsLoading(false)
+  }
+
   return (
     <>
       {isLoading && (
@@ -50,15 +49,15 @@ export default function SafeImage({ src, alt, fallbackSrc, ...props }) {
         </div>
       )}
       <Image
-        src={imgSrc}
-        alt={alt || 'Image'}
+        src={imgSrc || "/placeholder.svg"}
+        alt={alt || "Image"}
         unoptimized={isExternal}
         onError={handleError}
         onLoad={handleLoad}
         {...props}
         quality={75}
-        priority={true}
+        priority={false}
       />
     </>
-  );
+  )
 }

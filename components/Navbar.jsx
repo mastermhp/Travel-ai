@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Menu, X, User, LogOut, Settings } from "lucide-react"
+import { Menu, X, User, LogOut, Settings, CheckSquare } from "lucide-react"
 import { useAuth } from "@/context/AuthContext" // Import the auth context
 
 export default function Navbar() {
@@ -10,7 +10,7 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
-  
+
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 10) {
@@ -30,7 +30,7 @@ export default function Navbar() {
       await logout()
       setUserMenuOpen(false)
     } catch (error) {
-      console.error('Logout error:', error)
+      console.error("Logout error:", error)
     }
   }
 
@@ -89,41 +89,56 @@ export default function Navbar() {
             >
               AI Chat
             </Link>
-            
+            <Link
+              href="/tasks"
+              className={`font-medium ${scrolled ? "text-gray-800 hover:text-black" : "text-white hover:text-gray-200"} transition-colors flex items-center`}
+            >
+              <CheckSquare className="h-4 w-4 mr-1" />
+              Tasks
+            </Link>
+
             {isAuthenticated() ? (
               // User is authenticated - show user menu
               <div className="relative">
-                <button 
+                <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className={`flex items-center space-x-2 ${scrolled ? "text-gray-800 hover:text-black" : "text-white hover:text-gray-200"} transition-colors`}
                 >
-                  <div className={`w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center ${scrolled ? "text-gray-700" : "text-gray-600"}`}>
+                  <div
+                    className={`w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center ${scrolled ? "text-gray-700" : "text-gray-600"}`}
+                  >
                     <User className="h-5 w-5" />
                   </div>
-                  <span className="font-medium">
-                    {user?.firstName || 'Account'}
-                  </span>
+                  <span className="font-medium">{user?.firstName || "Account"}</span>
                 </button>
-                
+
                 {userMenuOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
                     <div className="px-4 py-2 border-b border-gray-100">
                       <p className="text-sm font-medium text-gray-900">
                         {user?.firstName} {user?.lastName}
                       </p>
-                      <p className="text-xs text-gray-500 truncate">
-                        {user?.email}
-                      </p>
+                      <p className="text-xs text-gray-500 truncate">{user?.email}</p>
                     </div>
-                    <Link 
-                      href="/bookings" 
+                    <Link
+                      href="/tasks"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                    >
+                      <div className="flex items-center">
+                        <CheckSquare className="h-4 w-4 mr-2" />
+                        My Tasks
+                      </div>
+                    </Link>
+                    <Link
+                      href="/bookings"
                       onClick={() => setUserMenuOpen(false)}
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                     >
                       My Bookings
                     </Link>
-                    <Link 
-                      href="/profile" 
+                    <Link
+                      href="/profile"
                       onClick={() => setUserMenuOpen(false)}
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                     >
@@ -132,7 +147,7 @@ export default function Navbar() {
                         Profile Settings
                       </div>
                     </Link>
-                    <button 
+                    <button
                       onClick={handleLogout}
                       className="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100 w-full text-left"
                     >
@@ -205,7 +220,15 @@ export default function Navbar() {
               >
                 AI Chat
               </Link>
-              
+              <Link
+                href="/tasks"
+                className="font-medium text-gray-800 hover:text-black transition-colors flex items-center"
+                onClick={() => setIsOpen(false)}
+              >
+                <CheckSquare className="h-4 w-4 mr-2" />
+                Tasks
+              </Link>
+
               {isAuthenticated() ? (
                 // User is authenticated - show profile links and logout
                 <div className="pt-4 border-t border-gray-100">
@@ -217,12 +240,19 @@ export default function Navbar() {
                       <p className="font-medium text-gray-900">
                         {user?.firstName} {user?.lastName}
                       </p>
-                      <p className="text-xs text-gray-500 truncate max-w-[200px]">
-                        {user?.email}
-                      </p>
+                      <p className="text-xs text-gray-500 truncate max-w-[200px]">{user?.email}</p>
                     </div>
                   </div>
-                  
+
+                  <Link
+                    href="/tasks"
+                    className="flex items-center w-full py-2 px-3 rounded-md font-medium text-gray-700 hover:bg-gray-100"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <CheckSquare className="h-4 w-4 mr-2" />
+                    My Tasks
+                  </Link>
+
                   <Link
                     href="/bookings"
                     className="flex items-center w-full py-2 px-3 rounded-md font-medium text-gray-700 hover:bg-gray-100"
@@ -230,7 +260,7 @@ export default function Navbar() {
                   >
                     My Bookings
                   </Link>
-                  
+
                   <Link
                     href="/profile"
                     className="flex items-center w-full py-2 px-3 rounded-md font-medium text-gray-700 hover:bg-gray-100"
@@ -239,7 +269,7 @@ export default function Navbar() {
                     <Settings className="h-4 w-4 mr-2" />
                     Profile Settings
                   </Link>
-                  
+
                   <button
                     onClick={(e) => {
                       handleLogout(e)
